@@ -7,9 +7,9 @@ public class WebcamController : MonoBehaviour
     public RawImage _webcamDisplay;
 
     [Header("Webcam Settings")]
-    public int _targetWidth = 1280;
-    public int _targetHeight = 720;
-    public int _targetFPS = 30;
+    public int _targetWidth = 640;
+    public int _targetHeight = 480;
+    public int _targetFPS = 60;
 
     private WebCamTexture _webCamTexture;
 
