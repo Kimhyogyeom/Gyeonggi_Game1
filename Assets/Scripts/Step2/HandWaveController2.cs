@@ -42,8 +42,12 @@ public class HandWaveController2 : MonoBehaviour
 
     private bool __isActive = false;
 
-    [Header("Particle Sysyem_Light")]
-    [SerializeField] private GameObject _light;
+    [Header("Particle System")]
+    [SerializeField] private GameObject _particleB;
+
+    [Header("Energy Flow Effect")]
+    [SerializeField] private EnergyFlowEffect _energyFlowEffect;
+
     void Start()
     {
         Debug.Log("=== HandWaveController3 시작 ===");
@@ -239,6 +243,15 @@ public class HandWaveController2 : MonoBehaviour
             _progressSlider.value = _currentProgress;
         }
 
+        // 파티클 B 활성화
+        PlayParticle();
+
+        // 에너지 흐름 효과 재생
+        if (_energyFlowEffect != null)
+        {
+            _energyFlowEffect.PlayEffect();
+        }
+
         Debug.Log(">>> Panel 3 웨이브 진행: " + _waveCount + "/" + _totalWavesNeeded + " (" + (_currentProgress * 100f).ToString("F0") + "%)");
 
         if (_waveCount >= _totalWavesNeeded)
@@ -247,6 +260,25 @@ public class HandWaveController2 : MonoBehaviour
             __isCompleted = true;
             _fadeAnimatorController.AnimatorFadeInPlay();
         }
+    }
+
+    void PlayParticle()
+    {
+        if (_particleB == null)
+        {
+            Debug.LogWarning("파티클 B가 연결되지 않음!");
+            return;
+        }
+
+        // 활성화 상태면 껐다가 다시 켜기
+        if (_particleB.activeSelf)
+        {
+            _particleB.SetActive(false);
+        }
+
+        _particleB.SetActive(true);
+
+        Debug.Log("파티클 B 재생!");
     }
     public void OnEventStartCoroutine()
     {

@@ -41,8 +41,12 @@ public class HandSwingController : MonoBehaviour
     private bool _isCompleted = false;
 
     private bool _isActive = false;
-    [Header("Particle Sysyem_Light")]
-    [SerializeField] private GameObject _light;
+    [Header("Particle System")]
+    [SerializeField] private GameObject _particleC;
+
+    [Header("Energy Flow Effect")]
+    [SerializeField] private EnergyFlowEffect _energyFlowEffect;
+
     void Start()
     {
         Debug.Log("=== HandSwingController 시작 ===");
@@ -243,6 +247,15 @@ public class HandSwingController : MonoBehaviour
             _progressSlider.value = _currentProgress;
         }
 
+        // 파티클 C 활성화
+        PlayParticle();
+
+        // 에너지 흐름 효과 재생
+        if (_energyFlowEffect != null)
+        {
+            _energyFlowEffect.PlayEffect();
+        }
+
         Debug.Log(">>> 좌우 흔들기 진행: " + _swingCount + "/" + _totalSwingsNeeded + " (" + (_currentProgress * 100f).ToString("F0") + "%)");
 
         if (_swingCount >= _totalSwingsNeeded)
@@ -251,6 +264,25 @@ public class HandSwingController : MonoBehaviour
             _isCompleted = true;
             _fadeAnimatorController.AnimatorFadeInPlay();
         }
+    }
+
+    void PlayParticle()
+    {
+        if (_particleC == null)
+        {
+            Debug.LogWarning("파티클 C가 연결되지 않음!");
+            return;
+        }
+
+        // 활성화 상태면 껐다가 다시 켜기
+        if (_particleC.activeSelf)
+        {
+            _particleC.SetActive(false);
+        }
+
+        _particleC.SetActive(true);
+
+        Debug.Log("파티클 C 재생!");
     }
     public void OnEventStartCoroutine()
     {

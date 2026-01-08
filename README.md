@@ -53,8 +53,61 @@
 - `AutoRotateY.cs`: Y축 자동 회전
 - `BounceY.cs`: Y축 바운스 애니메이션
 
+### 시각 효과
+- `EnergyFlowEffect.cs`: 에너지 흡수 폭죽 효과
+
 ### 기타
 - `ForceFullScreen.cs`: 전체화면 강제 설정
+
+## EnergyFlowEffect 설정 가이드
+
+에너지가 아이(시작점)에서 태양광 패널/도시(도착점)로 흡수되는 폭죽 효과입니다.
+
+### Inspector 설정
+
+| 카테고리 | 설정 | 기본값 | 설명 |
+|----------|------|--------|------|
+| **경로 설정** | `_startPoint` | - | 에너지 시작 위치 (RectTransform) |
+| | `_endPoint` | - | 에너지 도착 위치 (RectTransform) |
+| **에너지 점 설정** | `_particleSprite` | null | 파티클 스프라이트 (glow 원형 권장) |
+| | `_energyColor` | 노란색 | 파티클 색상 |
+| | `_dotSize` | 12 | 파티클 크기 |
+| | `_travelTime` | 0.5초 | 이동 시간 |
+| **연속 발사 설정** | `_totalParticles` | 100 | 발사되는 파티클 수 |
+| | `_burstDuration` | 0.25초 | 발사 지속 시간 |
+| | `_startSpread` | 50 | 시작점 퍼짐 범위 |
+| | `_endSpread` | 180 | 도착점 퍼짐 범위 |
+| | `_curveStrength` | 120 | 곡선 휘어짐 강도 |
+| **도착 시 폭발 효과** | `_explosionParticles` | 12 | 폭발 시 퍼지는 파티클 수 |
+| | `_explosionRadius` | 100 | 폭발 반경 |
+| | `_explosionDuration` | 0.3초 | 폭발 지속 시간 |
+| **크기 변화** | `_minSize` | 0.4 | 최소 크기 배율 |
+| | `_maxSize` | 1.0 | 최대 크기 배율 |
+| **Canvas 설정** | `_targetCanvas` | - | 파티클이 생성될 Canvas |
+
+### 사용 방법
+
+1. **EnergyFlowEffect 컴포넌트 추가**
+   - 빈 GameObject에 `EnergyFlowEffect.cs` 추가
+
+2. **경로 설정**
+   - `_startPoint`: 아이/에너지원 위치의 RectTransform
+   - `_endPoint`: 태양광 패널/도시 위치의 RectTransform
+   - `_targetCanvas`: 파티클이 렌더링될 Canvas
+
+3. **컨트롤러 연결**
+   - `HandWaveController`, `HandWaveController2`, `HandSwingController`의 `_energyFlowEffect` 필드에 연결
+
+4. **스프라이트 설정 (권장)**
+   - 중심이 밝고 가장자리가 투명한 원형 glow 스프라이트 사용
+   - Unity 기본 Knob 스프라이트도 사용 가능
+
+### 효과 조절 팁
+
+- **더 화려하게**: `_totalParticles` 증가, `_explosionParticles` 증가
+- **더 빠르게**: `_travelTime` 감소, `_burstDuration` 감소
+- **더 넓게 퍼지게**: `_endSpread`, `_explosionRadius` 증가
+- **더 작은 파티클**: `_dotSize` 감소, `_minSize`/`_maxSize` 감소
 
 ## 최적화 이력
 
