@@ -8,19 +8,44 @@ using System.Collections.Generic;
 /// </summary>
 public class EnergyFlowEffect : MonoBehaviour
 {
-    [Header("경로 설정")]
+    [Header("경로 설정 - 시작점")]
     [SerializeField] private RectTransform _startPoint;
-    [SerializeField] private RectTransform _endPoint;
+
+    [Header("경로 설정 - 게임별 도착점")]
+    [SerializeField] private RectTransform _endPointGame1;  // 태양광
+    [SerializeField] private RectTransform _endPointGame2;  // 수력
+    [SerializeField] private RectTransform _endPointGame3;  // 풍력
+
+    private RectTransform _currentEndPoint;
+
+    [Header("게임별 스프라이트")]
+    [SerializeField] private Sprite _spriteGame1;  // 태양광
+    [SerializeField] private Sprite _spriteGame2;  // 수력
+    [SerializeField] private Sprite _spriteGame3;  // 풍력
+
+    [Header("게임별 색상")]
+    [SerializeField] private Color _colorGame1 = new Color(1f, 0.9f, 0.3f, 1f);   // 노란색 (태양광)
+    [SerializeField] private Color _colorGame2 = new Color(0.3f, 0.7f, 1f, 1f);   // 파란색 (수력)
+    [SerializeField] private Color _colorGame3 = new Color(0.5f, 1f, 0.8f, 1f);   // 청록색 (풍력)
+
+    [Header("게임별 파동 효과 오브젝트 (Image)")]
+    [SerializeField] private Image _waveObjectGame1;  // 태양광 - 파동 효과 낼 이미지
+    [SerializeField] private Image _waveObjectGame2;  // 수력
+    [SerializeField] private Image _waveObjectGame3;  // 풍력
+
+    [Header("파동 효과 설정")]
+    [SerializeField] private float _waveMaxScale = 1.5f;    // 파동 최대 크기
+    [SerializeField] private float _waveDuration = 0.4f;    // 파동 지속 시간
+
+    private Image _currentWaveObject;
 
     [Header("에너지 점 설정")]
-    [SerializeField] private Sprite _particleSprite;
-    [SerializeField] private Color _energyColor = new Color(1f, 0.9f, 0.3f, 1f);
-    [SerializeField] private float _dotSize = 12f;  // 더 작게
-    [SerializeField] private float _travelTime = 0.5f;  // 더 빠르게
+    [SerializeField] private float _dotSize = 12f;
+    [SerializeField] private float _travelTime = 0.5f;
 
     [Header("연속 발사 설정")]
     [Tooltip("총 발사되는 파티클 수")]
-    [SerializeField] private int _totalParticles = 100;  // 훨씬 많이!
+    [SerializeField] private int _totalParticles = 100;
 
     [Tooltip("발사 지속 시간 (이 시간 동안 다다다닥 발사)")]
     [SerializeField] private float _burstDuration = 0.25f;
@@ -29,23 +54,23 @@ public class EnergyFlowEffect : MonoBehaviour
     [SerializeField] private float _startSpread = 50f;
 
     [Tooltip("도착점 퍼짐 범위")]
-    [SerializeField] private float _endSpread = 180f;  // 더 넓게
+    [SerializeField] private float _endSpread = 180f;
 
     [Tooltip("곡선 휘어짐 강도")]
     [SerializeField] private float _curveStrength = 120f;
 
     [Header("도착 시 폭발 효과")]
     [Tooltip("폭발 시 퍼지는 파티클 수")]
-    [SerializeField] private int _explosionParticles = 12;  // 더 많이
+    [SerializeField] private int _explosionParticles = 12;
 
     [Tooltip("폭발 반경")]
-    [SerializeField] private float _explosionRadius = 100f;  // 더 넓게
+    [SerializeField] private float _explosionRadius = 100f;
 
     [Tooltip("폭발 지속 시간")]
     [SerializeField] private float _explosionDuration = 0.3f;
 
     [Header("크기 변화")]
-    [SerializeField] private float _minSize = 0.4f;  // 더 작게
+    [SerializeField] private float _minSize = 0.4f;
     [SerializeField] private float _maxSize = 1.0f;
 
     [Header("Canvas 설정")]
@@ -53,20 +78,137 @@ public class EnergyFlowEffect : MonoBehaviour
 
     private List<GameObject> _activeDots = new List<GameObject>();
 
+    // 현재 사용 중인 스프라이트/색상
+    private Sprite _currentSprite;
+    private Color _currentColor;
+
     void Awake()
     {
         if (_targetCanvas == null)
         {
             Debug.LogError("EnergyFlowEffect: Target Canvas를 설정하세요!");
         }
+        // 기본값은 Game1
+        _currentSprite = _spriteGame1;
+        _currentColor = _colorGame1;
     }
 
     /// <summary>
-    /// 폭죽 효과 재생
+    /// 게임 번호에 맞는 스프라이트/색상으로 효과 재생
+    /// </summary>
+    /// <param name="gameNumber">1, 2, 3 중 하나</param>
+    public void PlayEffect(int gameNumber)
+    {
+        // 게임 번호에 따라 스프라이트/색상/도착점/파동오브젝트 설정
+        switch (gameNumber)
+        {
+            case 1:
+                _currentSprite = _spriteGame1;
+                _currentColor = _colorGame1;
+                _currentEndPoint = _endPointGame1;
+                _currentWaveObject = _waveObjectGame1;
+                break;
+            case 2:
+                _currentSprite = _spriteGame2;
+                _currentColor = _colorGame2;
+                _currentEndPoint = _endPointGame2;
+                _currentWaveObject = _waveObjectGame2;
+                break;
+            case 3:
+                _currentSprite = _spriteGame3;
+                _currentColor = _colorGame3;
+                _currentEndPoint = _endPointGame3;
+                _currentWaveObject = _waveObjectGame3;
+                break;
+            default:
+                _currentSprite = _spriteGame1;
+                _currentColor = _colorGame1;
+                _currentEndPoint = _endPointGame1;
+                _currentWaveObject = _waveObjectGame1;
+                break;
+        }
+
+        PlayEffectInternal();
+        PlayWaveEffect();
+    }
+
+    /// <summary>
+    /// 기본 효과 재생 (Game1 스프라이트/색상 사용)
     /// </summary>
     public void PlayEffect()
     {
-        if (_startPoint == null || _endPoint == null || _targetCanvas == null)
+        _currentSprite = _spriteGame1;
+        _currentColor = _colorGame1;
+        _currentEndPoint = _endPointGame1;
+        _currentWaveObject = _waveObjectGame1;
+        PlayEffectInternal();
+        PlayWaveEffect();
+    }
+
+    /// <summary>
+    /// 파동 효과 - 오브젝트 잔상이 커지면서 사라짐
+    /// </summary>
+    private void PlayWaveEffect()
+    {
+        if (_currentWaveObject == null) return;
+
+        StartCoroutine(WaveEffectCoroutine(_currentWaveObject));
+    }
+
+    IEnumerator WaveEffectCoroutine(Image sourceImage)
+    {
+        // 원본 이미지의 복제본 생성 (잔상)
+        GameObject waveObj = new GameObject("WaveEffect");
+        waveObj.transform.SetParent(sourceImage.transform.parent, false);
+
+        // 원본과 같은 위치/크기로 설정
+        RectTransform waveRt = waveObj.AddComponent<RectTransform>();
+        RectTransform sourceRt = sourceImage.rectTransform;
+
+        waveRt.anchoredPosition = sourceRt.anchoredPosition;
+        waveRt.sizeDelta = sourceRt.sizeDelta;
+        waveRt.anchorMin = sourceRt.anchorMin;
+        waveRt.anchorMax = sourceRt.anchorMax;
+        waveRt.pivot = sourceRt.pivot;
+        waveRt.localScale = sourceRt.localScale;
+        waveRt.localRotation = sourceRt.localRotation;
+
+        // 이미지 복사
+        Image waveImg = waveObj.AddComponent<Image>();
+        waveImg.sprite = sourceImage.sprite;
+        waveImg.color = sourceImage.color;
+        waveImg.raycastTarget = false;
+
+        // 원본 뒤에 배치 (잔상이 뒤에 보이도록)
+        waveRt.SetSiblingIndex(sourceRt.GetSiblingIndex());
+
+        // 파동 애니메이션
+        float elapsed = 0f;
+        Vector3 startScale = waveRt.localScale;
+        Color startColor = waveImg.color;
+
+        while (elapsed < _waveDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / _waveDuration;
+
+            // 부드럽게 커짐
+            float scale = Mathf.Lerp(1f, _waveMaxScale, EaseOutQuad(t));
+            waveRt.localScale = startScale * scale;
+
+            // 부드럽게 투명해짐
+            float alpha = Mathf.Lerp(startColor.a, 0f, EaseOutQuad(t));
+            waveImg.color = new Color(startColor.r, startColor.g, startColor.b, alpha);
+
+            yield return null;
+        }
+
+        Destroy(waveObj);
+    }
+
+    private void PlayEffectInternal()
+    {
+        if (_startPoint == null || _currentEndPoint == null || _targetCanvas == null)
         {
             return;
         }
@@ -101,18 +243,18 @@ public class EnergyFlowEffect : MonoBehaviour
         rt.localScale = Vector3.zero;
 
         Image img = dot.AddComponent<Image>();
-        if (_particleSprite != null)
+        if (_currentSprite != null)
         {
-            img.sprite = _particleSprite;
+            img.sprite = _currentSprite;
         }
 
         // 색상 약간 랜덤화 (밝기 변화)
         float brightness = Random.Range(0.8f, 1.2f);
         img.color = new Color(
-            Mathf.Clamp01(_energyColor.r * brightness),
-            Mathf.Clamp01(_energyColor.g * brightness),
-            Mathf.Clamp01(_energyColor.b * brightness),
-            _energyColor.a
+            Mathf.Clamp01(_currentColor.r * brightness),
+            Mathf.Clamp01(_currentColor.g * brightness),
+            Mathf.Clamp01(_currentColor.b * brightness),
+            _currentColor.a
         );
         img.raycastTarget = false;
 
@@ -129,7 +271,7 @@ public class EnergyFlowEffect : MonoBehaviour
         rt.anchoredPosition = startPos;
 
         // 도착 위치 (넓게 퍼짐)
-        Vector2 endCenter = WorldToCanvasPosition(_endPoint.position);
+        Vector2 endCenter = WorldToCanvasPosition(_currentEndPoint.position);
         float endOffsetX = Random.Range(-_endSpread, _endSpread);
         float endOffsetY = Random.Range(-_endSpread * 0.3f, _endSpread * 0.3f);
         Vector2 endPos = endCenter + new Vector2(endOffsetX, endOffsetY);
@@ -237,11 +379,11 @@ public class EnergyFlowEffect : MonoBehaviour
         rt.anchoredPosition = center;
 
         Image img = dot.AddComponent<Image>();
-        if (_particleSprite != null)
+        if (_currentSprite != null)
         {
-            img.sprite = _particleSprite;
+            img.sprite = _currentSprite;
         }
-        img.color = _energyColor;
+        img.color = _currentColor;
         img.raycastTarget = false;
 
         rt.SetAsLastSibling();

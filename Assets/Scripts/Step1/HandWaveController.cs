@@ -249,7 +249,7 @@ public class HandWaveController : MonoBehaviour
         // 에너지 흐름 효과 재생
         if (_energyFlowEffect != null)
         {
-            _energyFlowEffect.PlayEffect();
+            _energyFlowEffect.PlayEffect(1);  // Game1: 태양광
         }
 
         Debug.Log(">>> 웨이브 진행: " + _waveCount + "/" + _totalWavesNeeded + " (" + (_currentProgress * 100f).ToString("F0") + "%)");

@@ -253,7 +253,7 @@ public class HandSwingController : MonoBehaviour
         // 에너지 흐름 효과 재생
         if (_energyFlowEffect != null)
         {
-            _energyFlowEffect.PlayEffect();
+            _energyFlowEffect.PlayEffect(3);  // Game3: 풍력
         }
 
         Debug.Log(">>> 좌우 흔들기 진행: " + _swingCount + "/" + _totalSwingsNeeded + " (" + (_currentProgress * 100f).ToString("F0") + "%)");

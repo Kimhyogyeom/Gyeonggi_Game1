@@ -119,6 +119,41 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &5506078
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5506079}
+  m_Layer: 0
+  m_Name: GameObjectEnd2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &5506079
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5506078}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1662586306}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 13.9, y: 27.1}
+  m_SizeDelta: {x: 19.9264, y: 20.4603}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1001 &6850401
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4465,7 +4500,7 @@ GameObject:
   m_Component:
   - component: {fileID: 785943880}
   m_Layer: 0
-  m_Name: GameObjectEnd
+  m_Name: GameObjectEnd0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4487,8 +4522,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 30.8}
-  m_SizeDelta: {x: 100, y: 100}
+  m_AnchoredPosition: {x: 0, y: 39.1}
+  m_SizeDelta: {x: 19.9264, y: 20.4603}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &930446956
 GameObject:
@@ -5199,6 +5234,41 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1124258037}
   m_CullTransparentMesh: 1
+--- !u!1 &1125195181
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1125195182}
+  m_Layer: 0
+  m_Name: GameObjectEnd1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1125195182
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125195181}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1662586306}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -12.2, y: 27.1}
+  m_SizeDelta: {x: 19.9264, y: 20.4603}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1152593212
 GameObject:
   m_ObjectHideFlags: 0
@@ -7646,6 +7716,8 @@ Transform:
   m_Children:
   - {fileID: 2082027668}
   - {fileID: 785943880}
+  - {fileID: 1125195182}
+  - {fileID: 5506079}
   m_Father: {fileID: 381049744}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1662586307
@@ -7661,16 +7733,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _startPoint: {fileID: 2082027668}
-  _endPoint: {fileID: 785943880}
-  _particleSprite: {fileID: 21300000, guid: 0cb019a9bbed00044adcc227b7af9db6, type: 3}
-  _energyColor: {r: 1, g: 1, b: 1, a: 1}
+  _endPointGame1: {fileID: 785943880}
+  _endPointGame2: {fileID: 1125195182}
+  _endPointGame3: {fileID: 5506079}
+  _spriteGame1: {fileID: 21300000, guid: 1c9d43c1d039e9f419a9f6cef08269c6, type: 3}
+  _spriteGame2: {fileID: 21300000, guid: 9b4e5014c1fca4f469d3894cebfcbe46, type: 3}
+  _spriteGame3: {fileID: 21300000, guid: c073efbb508854f449ba36ffa9b756b2, type: 3}
+  _colorGame1: {r: 1, g: 1, b: 1, a: 1}
+  _colorGame2: {r: 1, g: 1, b: 1, a: 1}
+  _colorGame3: {r: 1, g: 1, b: 1, a: 1}
+  _waveObjectGame1: {fileID: 1890305798}
+  _waveObjectGame2: {fileID: 2056485821}
+  _waveObjectGame3: {fileID: 1213729787}
+  _waveMaxScale: 1.5
+  _waveDuration: 0.4
   _dotSize: 30
-  _travelTime: 0.8
+  _travelTime: 1
   _totalParticles: 50
   _burstDuration: 0.3
   _startSpread: 60
   _endSpread: 200
-  _curveStrength: 200
+  _curveStrength: 250
   _explosionParticles: 8
   _explosionRadius: 200
   _explosionDuration: 0.25
