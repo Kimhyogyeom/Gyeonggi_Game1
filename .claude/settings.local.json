@@ -12,7 +12,9 @@
       "Bash(git commit:*)",
       "Bash(cat:*)",
       "Bash(python:*)",
-      "Bash(gh repo create:*)"
+      "Bash(gh repo create:*)",
+      "Bash(ls -la \"c:\\\\Unity_Project\\\\Gyeonggi_Game1\\\\Assets\\\\Plugins\\\\Android\"\" 2>/dev/null || echo \"No Android plugins directory \")",
+      "Bash(find:*)"
     ]
   }
 }
