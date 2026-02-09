@@ -38,6 +38,16 @@ public class FadeAnimatorController : MonoBehaviour
     [SerializeField] private AudioClip _endSound1;     // End 패널 사운드 1
     [SerializeField] private AudioClip _endSound2;     // End 패널 사운드 2 (1번 끝나고 재생)
 
+    [Header("페이드 진입 시 활성화할 오브젝트 (5개)")]
+    [SerializeField] private GameObject[] _fadeObjects = new GameObject[5];
+
+    [Header("페이드 진입 시 음성 설정")]
+    [SerializeField] private AudioClip _fadeReadyToGame1Voice;    // Ready → Game1 페이드 시
+    [SerializeField] private AudioClip _fadeGame1ToGame2Voice;    // Game1 → Game2 페이드 시
+    [SerializeField] private AudioClip _fadeGame2ToGame3Voice;    // Game2 → Game3 페이드 시
+    [SerializeField] private AudioClip _fadeGame3ToEndVoice;      // Game3 → End 페이드 시
+    [SerializeField] private AudioClip _fadeEndToReadyVoice;      // End → Ready 페이드 시
+
     [Header("BGM 설정")]
     [SerializeField] private AudioClip _bgmClip;           // BGM 클립
     [SerializeField] private bool _playBgmOnStart = true;  // 시작 시 BGM 재생 여부
@@ -100,6 +110,19 @@ public class FadeAnimatorController : MonoBehaviour
 
     public void AnimatorFadeInPlay()
     {
+        // 현재 상태에 맞는 페이드 오브젝트 활성화 + 음성 재생
+        int stateIndex = (int)_currentState;
+        ActivateFadeObject(stateIndex);
+
+        switch (_currentState)
+        {
+            case State.Step0: PlaySound(_fadeReadyToGame1Voice); break;
+            case State.Step1: PlaySound(_fadeGame1ToGame2Voice); break;
+            case State.Step2: PlaySound(_fadeGame2ToGame3Voice); break;
+            case State.Step3: PlaySound(_fadeGame3ToEndVoice); break;
+            case State.Step4: PlaySound(_fadeEndToReadyVoice); break;
+        }
+
         _animator.SetBool("Fade", true);
     }
 
@@ -158,6 +181,24 @@ public class FadeAnimatorController : MonoBehaviour
         _animator.SetBool("Fade", false);
     }
 
+    void ActivateFadeObject(int index)
+    {
+        for (int i = 0; i < _fadeObjects.Length; i++)
+        {
+            if (_fadeObjects[i] != null)
+                _fadeObjects[i].SetActive(i == index);
+        }
+    }
+
+    void DeactivateAllFadeObjects()
+    {
+        for (int i = 0; i < _fadeObjects.Length; i++)
+        {
+            if (_fadeObjects[i] != null)
+                _fadeObjects[i].SetActive(false);
+        }
+    }
+
     void PlaySound(AudioClip clip)
     {
         if (_sfxAudioSource == null || clip == null) return;
@@ -198,6 +239,7 @@ public class FadeAnimatorController : MonoBehaviour
         }
 
         onComplete?.Invoke();
+        DeactivateAllFadeObjects();
         _animator.SetBool("Fade", false);
 
         Debug.Log("패널 전환 완료!");

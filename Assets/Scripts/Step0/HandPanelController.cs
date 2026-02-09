@@ -34,6 +34,7 @@ public class HandPanelController : MonoBehaviour
 
     private float _currentProgress = 0f;  // 현재 슬라이더 진행도 (0 ~ 1)
     private bool _isCharging = false;     // 충전 중인지 여부
+    private bool _isFading = false;       // 페이드 전환 중인지 여부
 
     [Header("Particle Sysyem_Light")]
     [SerializeField] private GameObject _light;
@@ -99,7 +100,7 @@ public class HandPanelController : MonoBehaviour
 
     void Update()
     {
-        if (!_hasTransitioned && _annotationController != null)
+        if (!_hasTransitioned && !_isFading && _annotationController != null)
         {
             ProcessHandTracking();
         }
@@ -186,7 +187,7 @@ public class HandPanelController : MonoBehaviour
 
     void UpdateSlider()
     {
-        if (_hasTransitioned) return;
+        if (_hasTransitioned || _isFading) return;
 
         if (_isCharging)
         {
@@ -206,6 +207,9 @@ public class HandPanelController : MonoBehaviour
             // 100% 도달하면 전환
             if (_currentProgress >= 1f)
             {
+                _isFading = true;
+                _isCharging = false;
+                _light.SetActive(false);
                 _fadeAnimatorController.AnimatorFadeInPlay();
                 // Debug.Log("슬라이더 100% 도달! Panel 2로 전환!");
                 // TransitionToPanel2();
@@ -247,6 +251,7 @@ public class HandPanelController : MonoBehaviour
         _currentProgress = 0f;
         _isCharging = false;
         _hasTransitioned = false;
+        _isFading = false;
 
         if (_progressSlider != null)
         {

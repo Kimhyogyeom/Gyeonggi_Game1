@@ -47,6 +47,10 @@ public class HandSwingController : MonoBehaviour
     [Header("Energy Flow Effect")]
     [SerializeField] private EnergyFlowEffect _energyFlowEffect;
 
+    [Header("제스처 사운드")]
+    [SerializeField] private AudioSource _gestureAudioSource;
+    [SerializeField] private AudioClip _gestureSound;
+
     void Start()
     {
         Debug.Log("=== HandSwingController 시작 ===");
@@ -245,6 +249,12 @@ public class HandSwingController : MonoBehaviour
         if (_progressSlider != null)
         {
             _progressSlider.value = _currentProgress;
+        }
+
+        // 제스처 사운드 재생 (중복 허용)
+        if (_gestureAudioSource != null && _gestureSound != null)
+        {
+            _gestureAudioSource.PlayOneShot(_gestureSound);
         }
 
         // 파티클 C 활성화
