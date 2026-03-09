@@ -204,6 +204,9 @@ public class HandPanelController : MonoBehaviour
                 }
             }
 
+            // 활동 보고 (비활동 타임아웃 리셋)
+            _fadeAnimatorController.ReportActivity();
+
             // 100% 도달하면 전환
             if (_currentProgress >= 1f)
             {
@@ -211,18 +214,26 @@ public class HandPanelController : MonoBehaviour
                 _isCharging = false;
                 _light.SetActive(false);
                 _fadeAnimatorController.AnimatorFadeInPlay();
-                // Debug.Log("슬라이더 100% 도달! Panel 2로 전환!");
-                // TransitionToPanel2();
             }
         }
         else
         {
+            // 충전 중이 아니면 게이지 초기화
+            if (_currentProgress > 0f)
+            {
+                Debug.Log("충전 중지 → 게이지 초기화!");
+                _currentProgress = 0f;
+                if (_progressSlider != null)
+                {
+                    _progressSlider.value = 0f;
+                }
+            }
+
             if (_light.activeSelf)
             {
                 _light.SetActive(false);
             }
         }
-        // 충전 중이 아니면 현재 값 유지 (멈춤)
     }
 
     /// <summary>

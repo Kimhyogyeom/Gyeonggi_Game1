@@ -5,9 +5,13 @@
 // https://opensource.org/licenses/MIT.
 
 using System.ComponentModel;
+using Mediapipe;
+using Mediapipe.Unity;
+using Tasks = Mediapipe.Tasks;
+using Mediapipe.Unity.Sample;
 using Mediapipe.Tasks.Vision.PoseLandmarker;
 
-namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
+namespace SeongWon
 {
   public enum ModelType : int
   {

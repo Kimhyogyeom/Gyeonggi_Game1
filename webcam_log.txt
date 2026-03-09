@@ -1,9 +1,15 @@
-=== StartupLogger: 2026-02-09 오후 4:27:51 ===
-[16:27:51] Unity Version: 6000.0.61f1
-[16:27:51] Platform: WindowsEditor
-[16:27:51] dataPath: C:/Unity_Project/Gyeonggi_Game1/Assets
-[16:27:51] Log file: C:\Unity_Project\Gyeonggi_Game1\webcam_log.txt
-[16:27:51] WebCamTexture.devices.Length: 1
-[16:27:51]   Camera: HD Pro Webcam C920
-[16:27:51] === Scene Loaded: MyMotionGame ===
-[16:27:51] Camera count: 1
+=== StartupLogger: 2026-03-09 오전 9:37:20 ===
+[09:37:20] Unity Version: 6000.0.61f1
+[09:37:20] Platform: WindowsEditor
+[09:37:20] dataPath: C:/Unity_Project/Gyeonggi_Game/Assets
+[09:37:20] Log file: C:\Unity_Project\Gyeonggi_Game\webcam_log.txt
+[09:37:20] WebCamTexture.devices.Length: 1
+[09:37:20]   Camera: HD Pro Webcam C920
+[09:37:21] === Scene Loaded: Main ===
+[09:37:21] Camera count: 1
+[09:37:23] === Scene Loaded: Ingame2 ===
+[09:37:23] Camera count: 1
+[09:37:29] === Scene Loaded: Main ===
+[09:37:29] Camera count: 1
+[09:37:36] === Scene Loaded: Ingame1 ===
+[09:37:36] Camera count: 1

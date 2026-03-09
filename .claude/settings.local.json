@@ -14,7 +14,10 @@
       "Bash(python:*)",
       "Bash(gh repo create:*)",
       "Bash(ls -la \"c:\\\\Unity_Project\\\\Gyeonggi_Game1\\\\Assets\\\\Plugins\\\\Android\"\" 2>/dev/null || echo \"No Android plugins directory \")",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(curl -L \"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task\" -o \"c:/Unity_Project/Gyeonggi_Game1/Assets/StreamingAssets/pose_landmarker_full.bytes\")",
+      "Bash(pip show python-pptx)",
+      "Bash(ls c:/Unity_Project/Gyeonggi_Game1/*.pptx)"
     ]
   }
 }

@@ -8,14 +8,22 @@ using System.Collections;
 using Mediapipe.Tasks.Vision.PoseLandmarker;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
+using Mediapipe;
+using Mediapipe.Unity;
+using Mediapipe.Unity.Sample;
+using Experimental = Mediapipe.Unity.Experimental;
+using Tasks = Mediapipe.Tasks;
 
-namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
+namespace SeongWon
 {
   public class PoseLandmarkerRunner : VisionTaskApiRunner<PoseLandmarker>
   {
     [SerializeField] private PoseLandmarkerResultAnnotationController _poseLandmarkerResultAnnotationController;
 
+    [SerializeField, Range(0, 1)] private float _horizontalCropRatio = 0.6f;
     private Experimental.TextureFramePool _textureFramePool;
+    private RenderTexture _croppedRT;
 
     public readonly PoseLandmarkDetectionConfig config = new PoseLandmarkDetectionConfig();
 
@@ -24,6 +32,12 @@ namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
       base.Stop();
       _textureFramePool?.Dispose();
       _textureFramePool = null;
+
+      if (_croppedRT != null)
+      {
+        _croppedRT.Release();
+        _croppedRT = null;
+      }
     }
 
     protected override IEnumerator Run()
@@ -48,19 +62,38 @@ namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
 
       if (!imageSource.isPrepared)
       {
-        Logger.LogError(TAG, "Failed to start ImageSource, exiting...");
+        Mediapipe.Logger.LogError(TAG, "Failed to start ImageSource, exiting...");
         yield break;
       }
 
       // Use RGBA32 as the input format.
       // TODO: When using GpuBuffer, MediaPipe assumes that the input format is BGRA, so maybe the following code needs to be fixed.
+      /* [기본 코드: 롤백용]
       _textureFramePool = new Experimental.TextureFramePool(imageSource.textureWidth, imageSource.textureHeight, TextureFormat.RGBA32, 10);
-
-      // NOTE: The screen will be resized later, keeping the aspect ratio.
       screen.Initialize(imageSource);
+      _poseLandmarkerResultAnnotationController.InitScreen(imageSource.textureWidth, imageSource.textureHeight);
+      */
+
+      // [크롭 코드 시작]
+      int croppedWidth = Mathf.RoundToInt(imageSource.textureWidth * _horizontalCropRatio);
+      int croppedHeight = imageSource.textureHeight; // 위아래는 자르지 않음
+      
+      _textureFramePool = new Experimental.TextureFramePool(croppedWidth, croppedHeight, TextureFormat.RGBA32, 10);
+      
+      screen.Initialize(imageSource);
+      // 화면 시각화 크롭 적용
+      if (screen != null)
+      {
+          float xOffset = (1.0f - _horizontalCropRatio) / 2.0f;
+          screen.uvRect = new UnityEngine.Rect(xOffset, 0, _horizontalCropRatio, 1.0f);
+      }
 
       SetupAnnotationController(_poseLandmarkerResultAnnotationController, imageSource);
-      _poseLandmarkerResultAnnotationController.InitScreen(imageSource.textureWidth, imageSource.textureHeight);
+      _poseLandmarkerResultAnnotationController.InitScreen(croppedWidth, croppedHeight);
+
+      _croppedRT = new RenderTexture(croppedWidth, croppedHeight, 0, GraphicsFormatUtility.GetGraphicsFormat(TextureFormat.RGBA32, true));
+      _croppedRT.Create();
+      // [크롭 코드 끝]
 
       var transformationOptions = imageSource.GetTransformationOptions();
       var flipHorizontally = transformationOptions.flipHorizontally;
@@ -81,6 +114,8 @@ namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
 
       while (true)
       {
+        //if (Time.frameCount % 90 == 0) Debug.Log("[PoseRunner] Loop Running..."); // 루프 동작 확인용 로그
+
         if (isPaused)
         {
           yield return new WaitWhile(() => isPaused);
@@ -92,6 +127,13 @@ namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
           continue;
         }
 
+        // [크롭 블릿 처리]
+        // 원본 텍스처에서 중앙 비율만큼 떼어내서 _croppedRT에 그리기
+        float xOffsetBlit = (1.0f - _horizontalCropRatio) / 2.0f;
+        Vector2 scale = new Vector2(_horizontalCropRatio, 1.0f);
+        Vector2 offset = new Vector2(xOffsetBlit, 0f);
+        Graphics.Blit(imageSource.GetCurrentTexture(), _croppedRT, scale, offset);
+
         // Build the input Image
         Image image;
         switch (config.ImageReadMode)
@@ -101,7 +143,8 @@ namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
             {
               throw new System.Exception("ImageReadMode.GPU is not supported");
             }
-            textureFrame.ReadTextureOnGPU(imageSource.GetCurrentTexture(), flipHorizontally, flipVertically);
+            // [기본 코드: 롤백용] textureFrame.ReadTextureOnGPU(imageSource.GetCurrentTexture(), flipHorizontally, flipVertically);
+            textureFrame.ReadTextureOnGPU(_croppedRT, flipHorizontally, flipVertically);
             image = textureFrame.BuildGPUImage(glContext);
             // TODO: Currently we wait here for one frame to make sure the texture is fully copied to the TextureFrame before sending it to MediaPipe.
             // This usually works but is not guaranteed. Find a proper way to do this. See: https://github.com/homuler/MediaPipeUnityPlugin/pull/1311
@@ -109,13 +152,15 @@ namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
             break;
           case ImageReadMode.CPU:
             yield return waitForEndOfFrame;
-            textureFrame.ReadTextureOnCPU(imageSource.GetCurrentTexture(), flipHorizontally, flipVertically);
+            // [기본 코드: 롤백용] textureFrame.ReadTextureOnCPU(imageSource.GetCurrentTexture(), flipHorizontally, flipVertically);
+            textureFrame.ReadTextureOnCPU(_croppedRT, flipHorizontally, flipVertically);
             image = textureFrame.BuildCPUImage();
             textureFrame.Release();
             break;
           case ImageReadMode.CPUAsync:
           default:
-            req = textureFrame.ReadTextureAsync(imageSource.GetCurrentTexture(), flipHorizontally, flipVertically);
+            // [기본 코드: 롤백용] req = textureFrame.ReadTextureAsync(imageSource.GetCurrentTexture(), flipHorizontally, flipVertically);
+            req = textureFrame.ReadTextureAsync(_croppedRT, flipHorizontally, flipVertically);
             yield return waitUntilReqDone;
 
             if (req.hasError)
@@ -161,6 +206,15 @@ namespace Mediapipe.Unity.Sample.PoseLandmarkDetection
 
     private void OnPoseLandmarkDetectionOutput(PoseLandmarkerResult result, Image image, long timestamp)
     {
+      if (result.poseLandmarks != null && result.poseLandmarks.Count > 0)
+      {
+          // 우리 컨트롤러로 결과 전달!
+          if (PoseHeadAndGestureController.instance != null)
+          {
+              PoseHeadAndGestureController.instance.OnPoseResult(result);
+          }
+      }
+
       _poseLandmarkerResultAnnotationController.DrawLater(result);
       DisposeAllMasks(result);
     }

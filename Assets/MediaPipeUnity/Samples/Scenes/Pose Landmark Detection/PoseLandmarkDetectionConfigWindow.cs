@@ -6,9 +6,12 @@
 
 using UnityEngine;
 using UnityEngine.UI;
+using Mediapipe.Unity;
+using Tasks = Mediapipe.Tasks;
+using Mediapipe.Unity.Sample;
 using Mediapipe.Unity.Sample.UI;
 
-namespace Mediapipe.Unity.Sample.PoseLandmarkDetection.UI
+namespace SeongWon
 {
   public class PoseLandmarkDetectionConfigWindow : ModalContents
   {

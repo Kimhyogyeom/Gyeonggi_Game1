@@ -251,6 +251,9 @@ public class HandSwingController : MonoBehaviour
             _progressSlider.value = _currentProgress;
         }
 
+        // 활동 보고 (비활동 타임아웃 리셋)
+        _fadeAnimatorController.ReportActivity();
+
         // 제스처 사운드 재생 (중복 허용)
         if (_gestureAudioSource != null && _gestureSound != null)
         {

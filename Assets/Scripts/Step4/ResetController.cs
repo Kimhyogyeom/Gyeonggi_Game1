@@ -53,10 +53,15 @@ public class ResetController : MonoBehaviour
             _autoResetCoroutine = null;
         }
 
-        _handPanelController.ResetProgress();
+        _handPanelController.ResetProgress();    // panel1 ON, panel2 OFF
         _handWaveController.ResetWaveController();
         _handWaveController2.ResetWaveController();
         _handSwingController.ResetSwingController();
+
+        // 중간 단계 패널도 확실히 비활성화 (타임아웃 리셋 대응)
+        if (_handWaveController._panel3 != null) _handWaveController._panel3.SetActive(false);
+        if (_handWaveController2._panel4 != null) _handWaveController2._panel4.SetActive(false);
+        if (_handSwingController._nextPanel != null) _handSwingController._nextPanel.SetActive(false);
 
         _currentPanel.SetActive(false);
         _nextPanel.SetActive(true);

@@ -48,12 +48,16 @@ public class FadeAnimatorController : MonoBehaviour
     [SerializeField] private AudioClip _fadeGame3ToEndVoice;      // Game3 → End 페이드 시
     [SerializeField] private AudioClip _fadeEndToReadyVoice;      // End → Ready 페이드 시
 
+    [Header("비활동 타임아웃 설정")]
+    [SerializeField] private float _inactivityTimeout = 15f;  // 이 시간(초) 동안 진행 없으면 Ready로 리셋
+
     [Header("BGM 설정")]
     [SerializeField] private AudioClip _bgmClip;           // BGM 클립
     [SerializeField] private bool _playBgmOnStart = true;  // 시작 시 BGM 재생 여부
     [SerializeField] [Range(0f, 1f)] private float _bgmVolume = 0.5f;  // BGM 볼륨
 
     private AudioSource _bgmAudioSource;  // 자동 생성됨
+    private float _lastActivityTime;  // 마지막 활동 시간
 
     void Start()
     {
@@ -68,6 +72,56 @@ public class FadeAnimatorController : MonoBehaviour
         {
             PlayBGM();
         }
+
+        // 비활동 타이머 초기화
+        _lastActivityTime = Time.time;
+    }
+
+    void Update()
+    {
+        // 비활동 타임아웃 체크 (Step4 제외, 페이드 중 제외)
+        if (_currentState != State.Step4 && !_animator.GetBool("Fade"))
+        {
+            if (Time.time - _lastActivityTime > _inactivityTimeout)
+            {
+                ResetToReady();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 각 컨트롤러에서 활동(제스처 감지) 시 호출하여 타임아웃 리셋
+    /// </summary>
+    public void ReportActivity()
+    {
+        _lastActivityTime = Time.time;
+    }
+
+    /// <summary>
+    /// 비활동 타임아웃 → Ready(Step0)로 전체 리셋
+    /// </summary>
+    private void ResetToReady()
+    {
+        Debug.Log($"비활동 타임아웃 ({_inactivityTimeout}초)! Ready로 리셋합니다.");
+
+        // 타이머 즉시 리셋 (중복 호출 방지)
+        _lastActivityTime = Time.time;
+
+        // 진행 중인 코루틴 정리
+        StopAllCoroutines();
+
+        // 전체 컨트롤러 리셋 (패널 포함)
+        _resetController.ResetAllControllers();
+
+        // 상태 초기화
+        _currentState = State.Step0;
+        _animator.SetBool("Fade", false);
+
+        // 페이드 오브젝트 정리
+        DeactivateAllFadeObjects();
+
+        // Ready 사운드 재생
+        PlaySound(_readySound);
     }
 
     void CreateBGMAudioSource()
@@ -110,6 +164,9 @@ public class FadeAnimatorController : MonoBehaviour
 
     public void AnimatorFadeInPlay()
     {
+        // 스텝 전환 시 활동 타이머 리셋
+        _lastActivityTime = Time.time;
+
         // 현재 상태에 맞는 페이드 오브젝트 활성화 + 음성 재생
         int stateIndex = (int)_currentState;
         ActivateFadeObject(stateIndex);
@@ -241,6 +298,9 @@ public class FadeAnimatorController : MonoBehaviour
         onComplete?.Invoke();
         DeactivateAllFadeObjects();
         _animator.SetBool("Fade", false);
+
+        // 새 스텝 시작 시 활동 타이머 리셋
+        _lastActivityTime = Time.time;
 
         Debug.Log("패널 전환 완료!");
     }
