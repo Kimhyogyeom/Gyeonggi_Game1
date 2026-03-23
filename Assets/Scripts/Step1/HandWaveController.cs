@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
-using Mediapipe.Tasks.Vision.HandLandmarker;
-using System.Reflection;
+using Mediapipe.Tasks.Vision.PoseLandmarker;
 using System.Collections;
 
 public class HandWaveController : MonoBehaviour
 {
     [SerializeField] private FadeAnimatorController _fadeAnimatorController;
+
     [Header("Panel References")]
     public GameObject _panel2;
     public GameObject _panel3;
@@ -17,30 +17,12 @@ public class HandWaveController : MonoBehaviour
     public GameObject _object3;
 
     [Header("Wave Detection Settings")]
-    public float _minimumWaveHeight = 400f;
-    public int _totalWavesNeeded = 12;  // 6 → 12로 2배 증가!
+    [Tooltip("점프 높이 배수 (코~어깨 거리 기준, 0.3 = 30%)")]
+    public float _waveHeightMultiplier = 0.3f;
+    public int _totalWavesNeeded = 12;
 
     [Header("Slider Settings")]
     public Slider _progressSlider;
-
-    [Header("Hand Tracking")]
-    public GameObject _solutionObject;
-
-    private Component _annotationController;
-    private FieldInfo _resultField;
-
-    private float _lastY = -1f;
-    private float _previousY = -1f;
-    private bool _wasMovingUp = false;
-
-    private float _peakY = 0f;
-    private bool _hasPeak = false;
-
-    private int _waveCount = 0;
-    private float _currentProgress = 0f;
-    private bool _isCompleted = false;
-
-    private bool _isActive = false;
 
     [Header("Particle System")]
     [SerializeField] private GameObject _particleA;
@@ -52,11 +34,41 @@ public class HandWaveController : MonoBehaviour
     [SerializeField] private AudioSource _gestureAudioSource;
     [SerializeField] private AudioClip _gestureSound;
 
+    // Wave detection state
+    private float _lastY = -1f;
+    private bool _wasMovingUp = false;
+    private float _peakY = 0f;
+    private bool _hasPeak = false;
+
+    private int _waveCount = 0;
+    private float _currentProgress = 0f;
+    private bool _isCompleted = false;
+    private bool _isActive = false;
+
+    // Pose 결과
+    private PoseLandmarkerResult _latestResult;
+    private bool _hasNewResult = false;
+
+    void OnEnable()
+    {
+        SeongWon.PoseLandmarkerRunner.OnPoseResultEvent += OnPoseResult;
+    }
+
+    void OnDisable()
+    {
+        SeongWon.PoseLandmarkerRunner.OnPoseResultEvent -= OnPoseResult;
+    }
+
+    private void OnPoseResult(PoseLandmarkerResult result)
+    {
+        _latestResult = result;
+        _hasNewResult = true;
+    }
+
     void Start()
     {
-        Debug.Log("=== HandWaveController 시작 ===");
+        Debug.Log("=== HandWaveController 시작 (Pose 기반) ===");
         Debug.Log("필요한 웨이브 횟수: " + _totalWavesNeeded);
-        SetupHandTracking();
     }
 
     void Update()
@@ -64,13 +76,12 @@ public class HandWaveController : MonoBehaviour
         if (_panel2 != null && _panel2.activeSelf)
         {
             if (!_isActive)
-            {
                 StartWaveDetection();
-            }
 
-            if (!_isCompleted && _annotationController != null)
+            if (!_isCompleted && _hasNewResult)
             {
-                ProcessHandTracking();
+                _hasNewResult = false;
+                ProcessPoseData(_latestResult);
                 UpdateObjectActivation();
             }
         }
@@ -90,7 +101,6 @@ public class HandWaveController : MonoBehaviour
         _isActive = true;
 
         _lastY = -1f;
-        _previousY = -1f;
         _wasMovingUp = false;
         _peakY = 0f;
         _hasPeak = false;
@@ -103,110 +113,54 @@ public class HandWaveController : MonoBehaviour
         if (_object3 != null) _object3.SetActive(false);
 
         if (_progressSlider != null)
-        {
             _progressSlider.value = 0f;
-        }
     }
 
-    void SetupHandTracking()
+    void ProcessPoseData(PoseLandmarkerResult result)
     {
-        if (_solutionObject != null)
-        {
-            foreach (var comp in _solutionObject.GetComponents<Component>())
-            {
-                string typeName = comp.GetType().Name;
+        if (result.poseLandmarks == null || result.poseLandmarks.Count == 0) return;
 
-                if (typeName.Contains("HandLandmarker") || typeName.Contains("Runner"))
-                {
-                    var type = comp.GetType();
+        var landmarks = result.poseLandmarks[PoseUtils.SelectCenterPlayer(result)].landmarks;
+        if (landmarks.Count <= 16) return;
 
-                    foreach (var field in type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance))
-                    {
-                        if (field.FieldType.Name.Contains("AnnotationController"))
-                        {
-                            _annotationController = field.GetValue(comp) as Component;
+        float noseY = landmarks[0].y;
+        float lShoulderY = landmarks[11].y;
+        float rShoulderY = landmarks[12].y;
+        float lWristY = landmarks[15].y;
+        float rWristY = landmarks[16].y;
 
-                            if (_annotationController != null)
-                            {
-                                var annoType = _annotationController.GetType();
-                                foreach (var annoField in annoType.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance))
-                                {
-                                    if (annoField.FieldType.Name.Contains("HandLandmarkerResult"))
-                                    {
-                                        _resultField = annoField;
-                                        Debug.Log("Hand Tracking 준비 완료!");
-                                        break;
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-    }
+        // 신체 비율 기반 동적 임계값 (코~어깨 거리)
+        float shoulderY = (lShoulderY + rShoulderY) / 2f;
+        float bodyScale = Mathf.Abs(shoulderY - noseY);
+        float dynamicThreshold = bodyScale * _waveHeightMultiplier;
 
-    void ProcessHandTracking()
-    {
-        if (_resultField == null) return;
-
-        try
-        {
-            var obj = _resultField.GetValue(_annotationController);
-
-            if (obj != null)
-            {
-                HandLandmarkerResult result = (HandLandmarkerResult)obj;
-
-                if (result.handLandmarks != null && result.handLandmarks.Count > 0)
-                {
-                    ProcessHandData(result);
-                }
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError("결과 접근 실패: " + e.Message);
-        }
-    }
-
-    void ProcessHandData(HandLandmarkerResult result)
-    {
-        var indexTip = result.handLandmarks[0].landmarks[8];
-        float currentY = (1 - indexTip.y) * Screen.height;
+        // 점프 감지: 어깨 평균 Y로 몸 전체 움직임 추적 (반전: 높을수록 큰 값)
+        float currentY = 1.0f - shoulderY;
 
         if (_lastY < 0)
         {
             _lastY = currentY;
-            _previousY = currentY;
             _peakY = currentY;
-            Debug.Log("초기 Y 설정: " + currentY.ToString("F0"));
+            Debug.Log("초기 Y 설정: " + currentY.ToString("F4") + " (bodyScale: " + bodyScale.ToString("F4") + ", threshold: " + dynamicThreshold.ToString("F4") + ")");
             return;
         }
 
-        DetectWave(currentY);
-
-        _previousY = _lastY;
+        DetectWave(currentY, dynamicThreshold);
         _lastY = currentY;
     }
 
-    void DetectWave(float currentY)
+    void DetectWave(float currentY, float threshold)
     {
         float delta = currentY - _lastY;
         bool isMovingUp = delta > 0;
 
+        // 위로 가다가 아래로 → 피크 발견
         if (_wasMovingUp && !isMovingUp)
         {
             _peakY = _lastY;
             _hasPeak = true;
-
-            if (Time.frameCount % 30 == 0)
-            {
-                Debug.Log("[피크] Y: " + _peakY.ToString("F0"));
-            }
         }
+        // 아래로 가다가 위로 → 골 발견 → 웨이브 체크
         else if (!_wasMovingUp && isMovingUp)
         {
             float valleyY = _lastY;
@@ -215,21 +169,12 @@ public class HandWaveController : MonoBehaviour
             {
                 float waveHeight = _peakY - valleyY;
 
-                if (waveHeight >= _minimumWaveHeight)
+                if (waveHeight >= threshold)
                 {
-                    Debug.Log("!!! 웨이브! 높이: " + waveHeight.ToString("F0") + "px");
+                    Debug.Log("!!! 웨이브! 높이: " + waveHeight.ToString("F4") + " (임계값: " + threshold.ToString("F4") + ")");
                     WaveDetected();
                     _hasPeak = false;
                 }
-                else
-                {
-                    Debug.Log("높이 부족: " + waveHeight.ToString("F0") + "px");
-                }
-            }
-
-            if (Time.frameCount % 30 == 0)
-            {
-                Debug.Log("[골] Y: " + valleyY.ToString("F0"));
             }
         }
 
@@ -239,36 +184,27 @@ public class HandWaveController : MonoBehaviour
     void WaveDetected()
     {
         _waveCount++;
-
         _currentProgress = (float)_waveCount / _totalWavesNeeded;
 
         if (_progressSlider != null)
-        {
             _progressSlider.value = _currentProgress;
-        }
 
-        // 활동 보고 (비활동 타임아웃 리셋)
+        // 활동 보고
         _fadeAnimatorController.ReportActivity();
 
-        // 제스처 사운드 재생 (중복 허용)
+        // 제스처 사운드 재생
         if (_gestureAudioSource != null && _gestureSound != null)
-        {
             _gestureAudioSource.PlayOneShot(_gestureSound);
-        }
 
-        // 파티클 A 활성화
+        // 파티클 활성화
         PlayParticle();
 
-        // 에너지 흐름 효과 재생
+        // 에너지 흐름 효과
         if (_energyFlowEffect != null)
-        {
             _energyFlowEffect.PlayEffect(1);  // Game1: 태양광
-        }
 
         Debug.Log(">>> 웨이브 진행: " + _waveCount + "/" + _totalWavesNeeded + " (" + (_currentProgress * 100f).ToString("F0") + "%)");
 
-
-        // 완료 체크
         if (_waveCount >= _totalWavesNeeded)
         {
             Debug.Log("!!! 웨이브 완료! Panel 3로 전환 준비!");
@@ -279,71 +215,52 @@ public class HandWaveController : MonoBehaviour
 
     void PlayParticle()
     {
-        if (_particleA == null)
-        {
-            Debug.LogWarning("파티클 A가 연결되지 않음!");
-            return;
-        }
+        if (_particleA == null) return;
 
-        // 활성화 상태면 껐다가 다시 켜기
         if (_particleA.activeSelf)
-        {
             _particleA.SetActive(false);
-        }
 
         _particleA.SetActive(true);
-
-        Debug.Log("파티클 A 재생!");
     }
 
     void UpdateObjectActivation()
     {
-        // 진행도에 따라 오브젝트 활성화
         float progress = _currentProgress;
 
-        // 1/3 완성 (33%)
         if (progress >= 0.33f && _object1 != null && !_object1.activeSelf)
         {
             _object1.SetActive(true);
             Debug.Log(">>> Object 1 활성화! (33% 달성)");
         }
 
-        // 2/3 완성 (66%)
         if (progress >= 0.66f && _object2 != null && !_object2.activeSelf)
         {
             _object2.SetActive(true);
             Debug.Log(">>> Object 2 활성화! (66% 달성)");
         }
 
-        // 완료 (100%)
         if (progress >= 1.0f && _object3 != null && !_object3.activeSelf)
         {
             _object3.SetActive(true);
             Debug.Log(">>> Object 3 활성화! (100% 달성)");
         }
     }
+
     public void OnEventStartCoroutine()
     {
         StartCoroutine(TransitionToPanel3());
     }
+
     IEnumerator TransitionToPanel3()
     {
-        Debug.Log("1초 후 Panel 3로 전환...");
-        //yield return new WaitForSeconds(1f);
-
         Debug.Log(">>> Panel 3로 전환 실행!");
 
         if (_panel2 != null)
-        {
             _panel2.SetActive(false);
-            Debug.Log("Panel 2 비활성화 완료");
-        }
 
         if (_panel3 != null)
-        {
             _panel3.SetActive(true);
-            Debug.Log("Panel 3 활성화 완료");
-        }
+
         yield return null;
     }
 
@@ -352,7 +269,6 @@ public class HandWaveController : MonoBehaviour
         Debug.Log("HandWaveController 리셋!");
 
         _lastY = -1f;
-        _previousY = -1f;
         _wasMovingUp = false;
         _peakY = 0f;
         _hasPeak = false;
@@ -366,8 +282,6 @@ public class HandWaveController : MonoBehaviour
         if (_object3 != null) _object3.SetActive(false);
 
         if (_progressSlider != null)
-        {
             _progressSlider.value = 0f;
-        }
     }
 }

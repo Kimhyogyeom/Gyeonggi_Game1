@@ -17,7 +17,11 @@
       "Bash(find:*)",
       "Bash(curl -L \"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task\" -o \"c:/Unity_Project/Gyeonggi_Game1/Assets/StreamingAssets/pose_landmarker_full.bytes\")",
       "Bash(pip show python-pptx)",
-      "Bash(ls c:/Unity_Project/Gyeonggi_Game1/*.pptx)"
+      "Bash(ls c:/Unity_Project/Gyeonggi_Game1/*.pptx)",
+      "Bash(xargs grep:*)",
+      "Bash(ls -la \"c:\\\\Unity_Project\\\\Gyeonggi_Game\\\\Assets\\\\Plugins\"\" 2>/dev/null || echo \"Plugins directory not found or empty \")",
+      "Bash(grep -i \"\\\\.cs$\")",
+      "Bash(grep -r \"1500\\\\|400\\\\|0.05\\\\|0.00007\\\\|0.003\\\\|1 - indexTip.y\\\\|indexTip.x\" /c/Unity_Project/Gyeonggi_Game/Assets/Scripts --include=*.cs)"
     ]
   }
 }

@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
-using Mediapipe.Tasks.Vision.HandLandmarker;
-using System.Reflection;
+using Mediapipe.Tasks.Vision.PoseLandmarker;
 using System.Collections;
 
 public class HandSwingController : MonoBehaviour
 {
     [SerializeField] private FadeAnimatorController _fadeAnimatorController;
+
     [Header("Panel References")]
     public GameObject _targetPanel;
     public GameObject _nextPanel;
@@ -16,31 +16,18 @@ public class HandSwingController : MonoBehaviour
     public GameObject _object2;
     public GameObject _object3;
 
-    [Header("Swing Detection Settings")]
-    public float _swingThreshold = 400f;  // X축 좌우 이동 거리
-    public int _totalSwingsNeeded = 12;   // 필요한 좌우 왕복 횟수
+    [Header("Wave Detection Settings")]
+    [Tooltip("웨이브 높이 배수 (코~어깨 거리 기준, 0.8 = 80%)")]
+    public float _waveHeightMultiplier = 0.8f;
+    public int _totalWavesNeeded = 12;
+    [Tooltip("웨이브 인식 후 쿨다운 (초)")]
+    public float _waveCooldown = 0.4f;
+    [Tooltip("Y값 스무딩 강도 (0~1, 낮을수록 부드러움)")]
+    public float _smoothing = 0.3f;
 
     [Header("Slider Settings")]
     public Slider _progressSlider;
 
-    [Header("Hand Tracking")]
-    public GameObject _solutionObject;
-
-    private Component _annotationController;
-    private FieldInfo _resultField;
-
-    private float _lastX = -1f;
-    private float _previousX = -1f;
-    private bool _wasMovingRight = false;
-
-    private float _peakX = 0f;
-    private bool _hasPeak = false;
-
-    private int _swingCount = 0;
-    private float _currentProgress = 0f;
-    private bool _isCompleted = false;
-
-    private bool _isActive = false;
     [Header("Particle System")]
     [SerializeField] private GameObject _particleC;
 
@@ -51,11 +38,43 @@ public class HandSwingController : MonoBehaviour
     [SerializeField] private AudioSource _gestureAudioSource;
     [SerializeField] private AudioClip _gestureSound;
 
+    // Wave detection state (Level 1과 동일한 Y축 웨이브 로직)
+    private float _lastY = -1f;
+    private float _smoothedY = -1f;
+    private bool _wasMovingUp = false;
+    private float _peakY = 0f;
+    private bool _hasPeak = false;
+    private float _lastWaveTime = -10f;
+
+    private int _waveCount = 0;
+    private float _currentProgress = 0f;
+    private bool _isCompleted = false;
+    private bool _isActive = false;
+
+    // Pose 결과
+    private PoseLandmarkerResult _latestResult;
+    private bool _hasNewResult = false;
+
+    void OnEnable()
+    {
+        SeongWon.PoseLandmarkerRunner.OnPoseResultEvent += OnPoseResult;
+    }
+
+    void OnDisable()
+    {
+        SeongWon.PoseLandmarkerRunner.OnPoseResultEvent -= OnPoseResult;
+    }
+
+    private void OnPoseResult(PoseLandmarkerResult result)
+    {
+        _latestResult = result;
+        _hasNewResult = true;
+    }
+
     void Start()
     {
-        Debug.Log("=== HandSwingController 시작 ===");
-        Debug.Log("필요한 좌우 흔들기 횟수: " + _totalSwingsNeeded);
-        SetupHandTracking();
+        Debug.Log("=== HandSwingController 시작 (Pose 기반, Y축 웨이브) ===");
+        Debug.Log("필요한 웨이브 횟수: " + _totalWavesNeeded);
     }
 
     void Update()
@@ -63,13 +82,12 @@ public class HandSwingController : MonoBehaviour
         if (_targetPanel != null && _targetPanel.activeSelf)
         {
             if (!_isActive)
-            {
-                StartSwingDetection();
-            }
+                StartWaveDetection();
 
-            if (!_isCompleted && _annotationController != null)
+            if (!_isCompleted && _hasNewResult)
             {
-                ProcessHandTracking();
+                _hasNewResult = false;
+                ProcessPoseData(_latestResult);
                 UpdateObjectActivation();
             }
         }
@@ -83,17 +101,18 @@ public class HandSwingController : MonoBehaviour
         }
     }
 
-    void StartSwingDetection()
+    void StartWaveDetection()
     {
-        Debug.Log(">>> 좌우 흔들기 감지 시작! (목표: " + _totalSwingsNeeded + "회)");
+        Debug.Log(">>> 웨이브 감지 시작! (목표: " + _totalWavesNeeded + "회)");
         _isActive = true;
 
-        _lastX = -1f;
-        _previousX = -1f;
-        _wasMovingRight = false;
-        _peakX = 0f;
+        _lastY = -1f;
+        _smoothedY = -1f;
+        _wasMovingUp = false;
+        _peakY = 0f;
         _hasPeak = false;
-        _swingCount = 0;
+        _lastWaveTime = -10f;
+        _waveCount = 0;
         _currentProgress = 0f;
         _isCompleted = false;
 
@@ -102,178 +121,99 @@ public class HandSwingController : MonoBehaviour
         if (_object3 != null) _object3.SetActive(false);
 
         if (_progressSlider != null)
-        {
             _progressSlider.value = 0f;
-        }
     }
 
-    void SetupHandTracking()
+    void ProcessPoseData(PoseLandmarkerResult result)
     {
-        if (_solutionObject != null)
+        if (result.poseLandmarks == null || result.poseLandmarks.Count == 0) return;
+
+        var landmarks = result.poseLandmarks[PoseUtils.SelectCenterPlayer(result)].landmarks;
+        if (landmarks.Count <= 16) return;
+
+        float noseY = landmarks[0].y;
+        float lShoulderY = landmarks[11].y;
+        float rShoulderY = landmarks[12].y;
+        float lWristY = landmarks[15].y;
+        float rWristY = landmarks[16].y;
+
+        // 신체 비율 기반 동적 임계값 (코~어깨 거리)
+        float shoulderY = (lShoulderY + rShoulderY) / 2f;
+        float bodyScale = Mathf.Abs(shoulderY - noseY);
+        float dynamicThreshold = bodyScale * _waveHeightMultiplier;
+
+        // 양 손목 평균 Y (반전: 높을수록 큰 값)
+        float rawY = 1.0f - (lWristY + rWristY) / 2f;
+
+        if (_lastY < 0)
         {
-            foreach (var comp in _solutionObject.GetComponents<Component>())
-            {
-                string typeName = comp.GetType().Name;
-
-                if (typeName.Contains("HandLandmarker") || typeName.Contains("Runner"))
-                {
-                    var type = comp.GetType();
-
-                    foreach (var field in type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance))
-                    {
-                        if (field.FieldType.Name.Contains("AnnotationController"))
-                        {
-                            _annotationController = field.GetValue(comp) as Component;
-
-                            if (_annotationController != null)
-                            {
-                                var annoType = _annotationController.GetType();
-                                foreach (var annoField in annoType.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance))
-                                {
-                                    if (annoField.FieldType.Name.Contains("HandLandmarkerResult"))
-                                    {
-                                        _resultField = annoField;
-                                        Debug.Log("Hand Tracking 준비 완료!");
-                                        break;
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    void ProcessHandTracking()
-    {
-        if (_resultField == null) return;
-
-        try
-        {
-            var obj = _resultField.GetValue(_annotationController);
-
-            if (obj != null)
-            {
-                HandLandmarkerResult result = (HandLandmarkerResult)obj;
-
-                if (result.handLandmarks != null && result.handLandmarks.Count > 0)
-                {
-                    ProcessHandData(result);
-                }
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError("결과 접근 실패: " + e.Message);
-        }
-    }
-
-    void ProcessHandData(HandLandmarkerResult result)
-    {
-        var indexTip = result.handLandmarks[0].landmarks[8];
-        float currentX = indexTip.x * Screen.width;
-
-        if (_lastX < 0)
-        {
-            _lastX = currentX;
-            _previousX = currentX;
-            _peakX = currentX;
-            Debug.Log("초기 X 설정: " + currentX.ToString("F0"));
+            _lastY = rawY;
+            _smoothedY = rawY;
+            _peakY = rawY;
             return;
         }
 
-        DetectSwing(currentX);
+        // 스무딩 적용 (떨림 제거)
+        _smoothedY = Mathf.Lerp(_smoothedY, rawY, _smoothing);
 
-        _previousX = _lastX;
-        _lastX = currentX;
+        DetectWave(_smoothedY, dynamicThreshold);
+        _lastY = _smoothedY;
     }
 
-    void DetectSwing(float currentX)
+    void DetectWave(float currentY, float threshold)
     {
-        float delta = currentX - _lastX;
-        bool isMovingRight = delta > 0;
+        float delta = currentY - _lastY;
+        bool isMovingUp = delta > 0;
 
-        // 방향 전환 감지: 오른쪽으로 가다가 왼쪽으로
-        if (_wasMovingRight && !isMovingRight)
+        if (_wasMovingUp && !isMovingUp)
         {
-            // 오른쪽 피크 발견!
-            _peakX = _lastX;
+            _peakY = _lastY;
             _hasPeak = true;
-
-            if (Time.frameCount % 30 == 0)
-            {
-                Debug.Log("[오른쪽 피크] X: " + _peakX.ToString("F0"));
-            }
         }
-        // 방향 전환 감지: 왼쪽으로 가다가 오른쪽으로
-        else if (!_wasMovingRight && isMovingRight)
+        else if (!_wasMovingUp && isMovingUp)
         {
-            // 왼쪽 골 발견!
-            float valleyX = _lastX;
+            float valleyY = _lastY;
 
-            // 피크가 있었다면 좌우 흔들기 완성 체크!
             if (_hasPeak)
             {
-                float swingWidth = _peakX - valleyX;
+                float waveHeight = _peakY - valleyY;
 
-                if (swingWidth >= _swingThreshold)
+                if (waveHeight >= threshold && Time.time - _lastWaveTime >= _waveCooldown)
                 {
-                    Debug.Log("!!! 좌우 흔들기 감지! 너비: " + swingWidth.ToString("F0") + "px");
-                    SwingDetected();
+                    Debug.Log("!!! 웨이브! 높이: " + waveHeight.ToString("F4") + " (임계값: " + threshold.ToString("F4") + ")");
+                    _lastWaveTime = Time.time;
+                    WaveDetected();
                     _hasPeak = false;
                 }
-                else
-                {
-                    Debug.Log("흔들기 너비 부족: " + swingWidth.ToString("F0") + "px (필요: " + _swingThreshold + "px)");
-                }
-            }
-
-            if (Time.frameCount % 30 == 0)
-            {
-                Debug.Log("[왼쪽 골] X: " + valleyX.ToString("F0"));
             }
         }
 
-        _wasMovingRight = isMovingRight;
+        _wasMovingUp = isMovingUp;
     }
 
-    void SwingDetected()
+    void WaveDetected()
     {
-        _swingCount++;
-
-        _currentProgress = (float)_swingCount / _totalSwingsNeeded;
+        _waveCount++;
+        _currentProgress = (float)_waveCount / _totalWavesNeeded;
 
         if (_progressSlider != null)
-        {
             _progressSlider.value = _currentProgress;
-        }
 
-        // 활동 보고 (비활동 타임아웃 리셋)
         _fadeAnimatorController.ReportActivity();
 
-        // 제스처 사운드 재생 (중복 허용)
         if (_gestureAudioSource != null && _gestureSound != null)
-        {
             _gestureAudioSource.PlayOneShot(_gestureSound);
-        }
 
-        // 파티클 C 활성화
         PlayParticle();
 
-        // 에너지 흐름 효과 재생
         if (_energyFlowEffect != null)
-        {
             _energyFlowEffect.PlayEffect(3);  // Game3: 풍력
-        }
 
-        Debug.Log(">>> 좌우 흔들기 진행: " + _swingCount + "/" + _totalSwingsNeeded + " (" + (_currentProgress * 100f).ToString("F0") + "%)");
+        Debug.Log(">>> 웨이브 진행: " + _waveCount + "/" + _totalWavesNeeded + " (" + (_currentProgress * 100f).ToString("F0") + "%)");
 
-        if (_swingCount >= _totalSwingsNeeded)
+        if (_waveCount >= _totalWavesNeeded)
         {
-            Debug.Log("!!! 좌우 흔들기 완료! 다음 패널로 전환 준비!");
+            Debug.Log("!!! 웨이브 완료! 다음 패널로 전환 준비!");
             _isCompleted = true;
             _fadeAnimatorController.AnimatorFadeInPlay();
         }
@@ -281,70 +221,41 @@ public class HandSwingController : MonoBehaviour
 
     void PlayParticle()
     {
-        if (_particleC == null)
-        {
-            Debug.LogWarning("파티클 C가 연결되지 않음!");
-            return;
-        }
+        if (_particleC == null) return;
 
-        // 활성화 상태면 껐다가 다시 켜기
         if (_particleC.activeSelf)
-        {
             _particleC.SetActive(false);
-        }
 
         _particleC.SetActive(true);
+    }
 
-        Debug.Log("파티클 C 재생!");
-    }
-    public void OnEventStartCoroutine()
-    {
-        StartCoroutine(TransitionToNextPanel());
-    }
     void UpdateObjectActivation()
     {
         float progress = _currentProgress;
 
-        // 1/3 완성 (33%)
         if (progress >= 0.33f && _object1 != null && !_object1.activeSelf)
-        {
             _object1.SetActive(true);
-            Debug.Log(">>> Object 1 활성화! (33% 달성)");
-        }
 
-        // 2/3 완성 (66%)
         if (progress >= 0.66f && _object2 != null && !_object2.activeSelf)
-        {
             _object2.SetActive(true);
-            Debug.Log(">>> Object 2 활성화! (66% 달성)");
-        }
 
-        // 완료 (100%)
         if (progress >= 1.0f && _object3 != null && !_object3.activeSelf)
-        {
             _object3.SetActive(true);
-            Debug.Log(">>> Object 3 활성화! (100% 달성)");
-        }
+    }
+
+    public void OnEventStartCoroutine()
+    {
+        StartCoroutine(TransitionToNextPanel());
     }
 
     IEnumerator TransitionToNextPanel()
     {
-        Debug.Log("1초 후 다음 패널로 전환...");
-        // yield return new WaitForSeconds(1f);
-
-        Debug.Log(">>> 다음 패널로 전환 실행!");
-
         if (_targetPanel != null)
-        {
             _targetPanel.SetActive(false);
-            Debug.Log("현재 패널 비활성화 완료");
-        }
 
         if (_nextPanel != null)
-        {
             _nextPanel.SetActive(true);
-            Debug.Log("다음 패널 활성화 완료");
-        }
+
         yield return null;
     }
 
@@ -352,12 +263,13 @@ public class HandSwingController : MonoBehaviour
     {
         Debug.Log("HandSwingController 리셋!");
 
-        _lastX = -1f;
-        _previousX = -1f;
-        _wasMovingRight = false;
-        _peakX = 0f;
+        _lastY = -1f;
+        _smoothedY = -1f;
+        _wasMovingUp = false;
+        _peakY = 0f;
         _hasPeak = false;
-        _swingCount = 0;
+        _lastWaveTime = -10f;
+        _waveCount = 0;
         _currentProgress = 0f;
         _isCompleted = false;
         _isActive = false;
@@ -367,8 +279,6 @@ public class HandSwingController : MonoBehaviour
         if (_object3 != null) _object3.SetActive(false);
 
         if (_progressSlider != null)
-        {
             _progressSlider.value = 0f;
-        }
     }
 }

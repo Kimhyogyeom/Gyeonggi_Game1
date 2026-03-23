@@ -1,0 +1,11 @@
+<linker>
+  <!-- MediaPipe Runtime - Code Stripping 방지 -->
+  <assembly fullname="Mediapipe.Runtime" preserve="all"/>
+
+  <!-- MediaPipe Unity Sample Scripts -->
+  <assembly fullname="Assembly-CSharp" preserve="all"/>
+
+  <!-- System 관련 (Reflection 사용) -->
+  <assembly fullname="System" preserve="all"/>
+  <assembly fullname="System.Core" preserve="all"/>
+</linker>

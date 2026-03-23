@@ -2283,10 +2283,9 @@ MonoBehaviour:
   _object1: {fileID: 1670078603}
   _object2: {fileID: 383673111}
   _object3: {fileID: 1474340302}
-  _minimumWaveHeight: 50
-  _totalWavesNeeded: 5
+  _waveHeightMultiplier: 0.3
+  _totalWavesNeeded: 6
   _progressSlider: {fileID: 1672525004}
-  _solutionObject: {fileID: 1064799459}
   _particleA: {fileID: 1839264204}
   _energyFlowEffect: {fileID: 1662586307}
   _gestureAudioSource: {fileID: 199044275}
@@ -6062,7 +6061,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8798066378341861651}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b085c374a6772aba491e20d7d9d980db, type: 3}
   m_Name: 
@@ -6327,6 +6326,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1064799461}
   - component: {fileID: 1064799468}
+  - component: {fileID: 1064799469}
   m_Layer: 0
   m_Name: Solution
   m_TagString: Untagged
@@ -6356,7 +6356,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1064799459}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 20f2fd61d43b483ba93442eb6cfc37cf, type: 3}
   m_Name: 
@@ -6365,6 +6365,23 @@ MonoBehaviour:
   screen: {fileID: 2020366215250113080}
   runningMode: 1
   _handLandmarkerResultAnnotationController: {fileID: 1006057044}
+--- !u!114 &1064799469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1064799459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70620c801523bd3daafb31ee271ecac9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _bootstrapPrefab: {fileID: 968918444066301895, guid: 1146a9de09159a948b683e94fb3d3c95, type: 3}
+  screen: {fileID: 2020366215250113080}
+  runningMode: 1
+  _poseLandmarkerResultAnnotationController: {fileID: 8798066378341861652}
+  _horizontalCropRatio: 0.6
 --- !u!1 &1102179411
 GameObject:
   m_ObjectHideFlags: 0
@@ -8402,11 +8419,9 @@ MonoBehaviour:
   _fadeAnimatorController: {fileID: 199044274}
   _panel1: {fileID: 589593296}
   _panel2: {fileID: 1291841768}
-  _yThreshold: 700
+  _handAboveHeadOffset: 0.02
   _progressSlider: {fileID: 662663787}
-  _fillDuration: 3
-  _fingerIndicator: {fileID: 0}
-  _solutionObject: {fileID: 1064799459}
+  _fillDuration: 2.5
   _light: {fileID: 2144962399}
 --- !u!4 &1509015225
 Transform:
@@ -8533,10 +8548,9 @@ MonoBehaviour:
   _object1: {fileID: 1167781083}
   _object2: {fileID: 1152593212}
   _object3: {fileID: 1527038697}
-  _minimumWaveHeight: 50
-  _totalWavesNeeded: 5
+  _waveHeightMultiplier: 0.3
+  _totalWavesNeeded: 6
   _progressSlider: {fileID: 939773658}
-  _solutionObject: {fileID: 1064799459}
   _particleB: {fileID: 1885113345}
   _energyFlowEffect: {fileID: 1662586307}
   _gestureAudioSource: {fileID: 199044275}
@@ -9162,10 +9176,9 @@ MonoBehaviour:
   _object1: {fileID: 133249989}
   _object2: {fileID: 268369408}
   _object3: {fileID: 91616520}
-  _swingThreshold: 50
-  _totalSwingsNeeded: 5
+  _waveHeightMultiplier: 0.3
+  _totalWavesNeeded: 6
   _progressSlider: {fileID: 1604756777}
-  _solutionObject: {fileID: 1064799459}
   _particleC: {fileID: 510171760}
   _energyFlowEffect: {fileID: 1662586307}
   _gestureAudioSource: {fileID: 199044275}
@@ -11947,7 +11960,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 890b6ace92709a741955fec3798e929e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 507f728fc75ba5d4c97769d839d0e80e, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -11978,11 +11991,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   frames:
-  - {fileID: 21300000, guid: 890b6ace92709a741955fec3798e929e, type: 3}
-  - {fileID: 21300000, guid: 66e0b3522baeed9488769e6d7483808a, type: 3}
-  - {fileID: 21300000, guid: d1e38e80091f1414492f6d4ca398b86c, type: 3}
-  - {fileID: 21300000, guid: 5330c755b931d6747b747f0cc1398680, type: 3}
-  - {fileID: 21300000, guid: 3792e8ba3e29304429e7e9140a055a36, type: 3}
+  - {fileID: 21300000, guid: 507f728fc75ba5d4c97769d839d0e80e, type: 3}
+  - {fileID: 21300000, guid: c36482a7c10d5fd409bd50f66c5dd7f9, type: 3}
+  - {fileID: 21300000, guid: 80f9aef5e128a1a41b813d9971de3d02, type: 3}
+  - {fileID: 21300000, guid: 84e958c3a5f457249a7d40cbe1df181c, type: 3}
+  - {fileID: 21300000, guid: bdd3e51ec74b99640a1c0255b6345737, type: 3}
   fps: 8
 --- !u!114 &385597883727708124
 MonoBehaviour:
@@ -12185,7 +12198,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3259285890378814187}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 418c4037524f4234483118d606ea49c7, type: 3}
   m_Name: 
@@ -12240,6 +12253,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7434967355645956678}
   - component: {fileID: 385597883727708124}
+  - component: {fileID: 7434967355645956679}
   m_Layer: 0
   m_Name: Multi HandLandmarkList Annotation
   m_TagString: Untagged
@@ -12262,6 +12276,28 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7074087083202810096}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7434967355645956679
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7434967355645956677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 618f0a05cbf326799b0869858fb2a76a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _annotationPrefab: {fileID: 6258456134762946104, guid: 781ab0ae64dd1bc4db2ccf4f84c6961e, type: 3}
+  _leftLandmarkColor: {r: 1, g: 0.7031921, b: 0, a: 1}
+  _rightLandmarkColor: {r: 0, g: 0.9388051, b: 1, a: 1}
+  _landmarkRadius: 15
+  _connectionColor: {r: 1, g: 1, b: 1, a: 1}
+  _connectionWidth: 1
+  _screen: {fileID: 3259285890378814185}
+  _maskTexture: {fileID: 0}
+  _color: {r: 0, g: 0, b: 1, a: 1}
+  _maskThreshold: 0.9
 --- !u!4 &7750853977226426231 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3353536559126745028, guid: 231203013ae4443409c210be83ec79dd, type: 3}
@@ -12277,6 +12313,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7074087083202810096}
   - component: {fileID: 1006057044}
+  - component: {fileID: 8798066378341861652}
   m_Layer: 5
   m_Name: Annotation Layer
   m_TagString: Untagged
@@ -12284,6 +12321,20 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &8798066378341861652
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8798066378341861651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df9bce341028c908c92354551ef8347c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  annotation: {fileID: 7434967355645956679}
+  _visualizeZ: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

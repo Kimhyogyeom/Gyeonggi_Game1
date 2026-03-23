@@ -19,6 +19,7 @@ namespace SeongWon
 {
   public class PoseLandmarkerRunner : VisionTaskApiRunner<PoseLandmarker>
   {
+    public static event System.Action<PoseLandmarkerResult> OnPoseResultEvent;
     [SerializeField] private PoseLandmarkerResultAnnotationController _poseLandmarkerResultAnnotationController;
 
     [SerializeField, Range(0, 1)] private float _horizontalCropRatio = 0.6f;
@@ -206,9 +207,12 @@ namespace SeongWon
 
     private void OnPoseLandmarkDetectionOutput(PoseLandmarkerResult result, Image image, long timestamp)
     {
+      // 모든 구독자에게 결과 전달 (Ingame 컨트롤러 등)
+      OnPoseResultEvent?.Invoke(result);
+
       if (result.poseLandmarks != null && result.poseLandmarks.Count > 0)
       {
-          // 우리 컨트롤러로 결과 전달!
+          // City 게임 컨트롤러로 결과 전달
           if (PoseHeadAndGestureController.instance != null)
           {
               PoseHeadAndGestureController.instance.OnPoseResult(result);
